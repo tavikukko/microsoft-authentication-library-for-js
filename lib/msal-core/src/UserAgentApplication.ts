@@ -1081,7 +1081,11 @@ export class UserAgentApplication {
             this.telemetryManager.stopAndFlushApiEvent(requestCorrelationId, apiEvent, true);
 
             this.logger.verbose("Navigating window to urlNavigate");
-            this.navigateWindow(urlNavigate);
+
+            // This is for SP Editor Chrome Extension, remove this when adal supports logging out in Popup window.
+            if (window.location.href.indexOf("chrome-extension") === -1) {
+                this.navigateWindow(urlNavigate);
+            }
         } catch (error) {
             this.telemetryManager.stopAndFlushApiEvent(requestCorrelationId, apiEvent, false, error.errorCode);
         }
