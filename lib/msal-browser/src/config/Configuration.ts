@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import { SystemOptions, LoggerOptions, INetworkModule, DEFAULT_SYSTEM_OPTIONS, Constants, ProtocolMode, LogLevel } from "@azure/msal-common";
+import { SystemOptions, LoggerOptions, INetworkModule, DEFAULT_SYSTEM_OPTIONS, Constants, ProtocolMode, LogLevel, StubbedNetworkModule } from "@azure/msal-common";
 import { BrowserUtils } from "../utils/BrowserUtils";
 import { BrowserCacheLocation } from "../utils/BrowserConstants";
 
@@ -30,8 +30,9 @@ export type BrowserAuthOptions = {
     authority?: string;
     knownAuthorities?: Array<string>;
     cloudDiscoveryMetadata?: string;
+    authorityMetadata?: string;
     redirectUri?: string;
-    postLogoutRedirectUri?: string;
+    postLogoutRedirectUri?: string | null;
     navigateToLoginRequestUrl?: boolean;
     clientCapabilities?: Array<string>;
     protocolMode?: ProtocolMode;
@@ -41,11 +42,13 @@ export type BrowserAuthOptions = {
  * Use this to configure the below cache configuration options:
  *
  * - cacheLocation            - Used to specify the cacheLocation user wants to set. Valid values are "localStorage" and "sessionStorage"
- * - storeAuthStateInCookie   - If set, MSAL store's the auth request state required for validation of the auth flows in the browser cookies. By default this flag is set to false.
+ * - storeAuthStateInCookie   - If set, MSAL stores the auth request state required for validation of the auth flows in the browser cookies. By default this flag is set to false.
+ * - secureCookies            - If set, MSAL sets the "Secure" flag on cookies so they can only be sent over HTTPS. By default this flag is set to false.
  */
 export type CacheOptions = {
     cacheLocation?: BrowserCacheLocation | string;
     storeAuthStateInCookie?: boolean;
+    secureCookies?: boolean;
 };
 
 /**
@@ -83,7 +86,7 @@ export type BrowserSystemOptions = SystemOptions & {
  * - system: this is where you can configure the network client, logger, token renewal offset
  */
 export type Configuration = {
-    auth?: BrowserAuthOptions,
+    auth: BrowserAuthOptions,
     cache?: CacheOptions,
     system?: BrowserSystemOptions
 };
@@ -103,7 +106,7 @@ export type BrowserConfiguration = {
  *
  * @returns Configuration object
  */
-export function buildConfiguration({ auth: userInputAuth, cache: userInputCache, system: userInputSystem }: Configuration): BrowserConfiguration {
+export function buildConfiguration({ auth: userInputAuth, cache: userInputCache, system: userInputSystem }: Configuration, isBrowserEnvironment: boolean): BrowserConfiguration {
 
     // Default auth options for browser
     const DEFAULT_AUTH_OPTIONS: Required<BrowserAuthOptions> = {
@@ -111,6 +114,7 @@ export function buildConfiguration({ auth: userInputAuth, cache: userInputCache,
         authority: `${Constants.DEFAULT_AUTHORITY}`,
         knownAuthorities: [],
         cloudDiscoveryMetadata: "",
+        authorityMetadata: "",
         redirectUri: "",
         postLogoutRedirectUri: "",
         navigateToLoginRequestUrl: true,
@@ -121,7 +125,8 @@ export function buildConfiguration({ auth: userInputAuth, cache: userInputCache,
     // Default cache options for browser
     const DEFAULT_CACHE_OPTIONS: Required<CacheOptions> = {
         cacheLocation: BrowserCacheLocation.SessionStorage,
-        storeAuthStateInCookie: false
+        storeAuthStateInCookie: false,
+        secureCookies: false
     };
 
     // Default logger options for browser
@@ -135,12 +140,12 @@ export function buildConfiguration({ auth: userInputAuth, cache: userInputCache,
     const DEFAULT_BROWSER_SYSTEM_OPTIONS: Required<BrowserSystemOptions> = {
         ...DEFAULT_SYSTEM_OPTIONS,
         loggerOptions: DEFAULT_LOGGER_OPTIONS,
-        networkClient: BrowserUtils.getBrowserNetworkClient(),
+        networkClient: isBrowserEnvironment ? BrowserUtils.getBrowserNetworkClient() : StubbedNetworkModule,
         loadFrameTimeout: 0,
         // If loadFrameTimeout is provided, use that as default.
         windowHashTimeout: (userInputSystem && userInputSystem.loadFrameTimeout) || DEFAULT_POPUP_TIMEOUT_MS,
         iframeHashTimeout: (userInputSystem && userInputSystem.loadFrameTimeout) || DEFAULT_IFRAME_TIMEOUT_MS,
-        navigateFrameWait: BrowserUtils.detectIEOrEdge() ? 500 : 0,
+        navigateFrameWait: isBrowserEnvironment && BrowserUtils.detectIEOrEdge() ? 500 : 0,
         redirectNavigationTimeout: DEFAULT_REDIRECT_TIMEOUT_MS,
         asyncPopups: false,
         allowRedirectInIframe: false
