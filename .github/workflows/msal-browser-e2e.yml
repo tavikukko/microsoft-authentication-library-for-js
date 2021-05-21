@@ -13,7 +13,12 @@ on:
       - 'lib/msal-browser/**/*' 
       - 'lib/msal-common/**/*'
       - 'samples/msal-browser-samples/VanillaJSTestApp2.0/**/*'
+      - 'samples/e2eTestUtils/**/*'
       - '!**.md'
+
+concurrency:
+  group: browser-e2e-${{github.ref}}
+  cancel-in-progress: true
 
 jobs:
   run-e2e:
@@ -30,6 +35,10 @@ jobs:
       env:
         RUNNING_NODE_CI: 1
       run: npm ci
+
+    - name: Install Test Tools
+      working-directory: samples
+      run: npm install
 
     - name: Build packages
       working-directory: samples/msal-browser-samples/VanillaJSTestApp2.0

@@ -89,7 +89,10 @@ export class OnBehalfOfClient extends BaseClient {
                 idToken: cachedIdToken,
                 refreshToken: null,
                 appMetadata: null
-            }, true, idTokenObject);
+            },
+            true,
+            request,
+            idTokenObject);
     }
 
     /**
@@ -181,11 +184,7 @@ export class OnBehalfOfClient extends BaseClient {
             response.body,
             this.authority,
             reqTimestamp,
-            request.resourceRequestMethod,
-            request.resourceRequestUri,
-            undefined,
-            request.scopes,
-            request.oboAssertion
+            request
         );
 
         return tokenResponse;
@@ -205,6 +204,14 @@ export class OnBehalfOfClient extends BaseClient {
         parameterBuilder.addGrantType(GrantType.JWT_BEARER);
 
         parameterBuilder.addClientInfo();
+
+        parameterBuilder.addLibraryInfo(this.config.libraryInfo);
+
+        parameterBuilder.addThrottling();
+        
+        if (this.serverTelemetryManager) {
+            parameterBuilder.addServerTelemetry(this.serverTelemetryManager);
+        }
 
         const correlationId = request.correlationId || this.config.cryptoInterface.createNewGuid();
         parameterBuilder.addCorrelationId(correlationId);

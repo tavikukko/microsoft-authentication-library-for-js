@@ -9,10 +9,14 @@ on:
       - 'dev'
       - 'master'
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**/.vscode/*.json'
-      - 'samples/**'
+    paths:
+      - 'lib/**/*'
+      - '!**.md'
+      - '.github/workflows/build-steps.yml'
+
+concurrency:
+  group: ci-${{github.ref}}
+  cancel-in-progress: true
 
 jobs:
 
